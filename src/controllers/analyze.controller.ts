@@ -17,7 +17,6 @@ export const analyze = (req: Request, res: Response) => {
     let tokenList = lexicalAnalyzer.scanner(input);
     let errorList = lexicalAnalyzer.getErrorList();
 
-    // Procesar equipo Pokémon solo si no hay errores
     let teamData = null;
     if (errorList.length === 0) {
         teamData = extractPokemonData(input);
@@ -26,20 +25,18 @@ export const analyze = (req: Request, res: Response) => {
     res.json({
         tokens: tokenList,
         errors: errorList,
-        team: teamData // Añadimos los datos del equipo a la respuesta
+        team: teamData 
     });
 };
 
 function extractPokemonData(input: string): { player: string; pokemons: PokemonData[] } | null {
     try {
-        // Extraer nombre del jugador
         const playerMatch = input.match(/Jugador:\s*"([^"]+)"/);
         if (!playerMatch) return null;
         
         const player = playerMatch[1];
         const pokemons: PokemonData[] = [];
 
-        // Expresión regular para extraer datos de cada Pokémon
 const pokemonRegex = /"([^"]+)"\[([^\]]+)\]\s*:=\s*\(\s*\[salud\]\s*=\s*(\d+)\s*;\s*\[ataque\]\s*=\s*(\d+)\s*;\s*\[defensa\]\s*=\s*(\d+)\s*;/g;
         
         let match;
@@ -50,7 +47,6 @@ const pokemonRegex = /"([^"]+)"\[([^\]]+)\]\s*:=\s*\(\s*\[salud\]\s*=\s*(\d+)\s*
             const attack = parseInt(match[4]);
             const defense = parseInt(match[5]);
             
-            // Calcular IVs (según la fórmula del enunciado)
             const ivs = ((health + attack + defense) / 45) * 100;
             
             pokemons.push({
@@ -63,7 +59,6 @@ const pokemonRegex = /"([^"]+)"\[([^\]]+)\]\s*:=\s*\(\s*\[salud\]\s*=\s*(\d+)\s*
             });
         }
 
-        // Seleccionar los 6 mejores Pokémon (sin repetir tipos)
         const bestTeam = selectBestTeam(pokemons);
 
         return {
@@ -71,18 +66,16 @@ const pokemonRegex = /"([^"]+)"\[([^\]]+)\]\s*:=\s*\(\s*\[salud\]\s*=\s*(\d+)\s*
             pokemons: bestTeam
         };
     } catch (error) {
-        console.error('Error al extraer datos de Pokémon:', error);
+        console.error('Error al extraer datos de Pokemon:', error);
         return null;
     }
 }
 
 function selectBestTeam(pokemons: PokemonData[]): PokemonData[] {
-    // Ordenar por IVs (de mayor a menor)
     const sorted = [...pokemons].sort((a, b) => b.ivs - a.ivs);
     
     const uniqueTypes: Record<string, PokemonData> = {};
     
-    // Seleccionar los mejores de cada tipo
     for (const pokemon of sorted) {
         if (!uniqueTypes[pokemon.type] && Object.keys(uniqueTypes).length < 6) {
             uniqueTypes[pokemon.type] = pokemon;

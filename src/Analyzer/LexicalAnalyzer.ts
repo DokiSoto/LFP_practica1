@@ -128,7 +128,6 @@ class LexicalAnalyzer {
             "agua", "fuego", "planta", "dragon", "psiquico", "normal"
         ];
         
-        // Comparación exacta (case-sensitive)
         if (palabras.some(palabra => palabra === this.auxChar)) {
             this.addToken(Type.PALABRA_RESERVADA, this.auxChar, this.row, this.column - this.auxChar.length);
         } else {

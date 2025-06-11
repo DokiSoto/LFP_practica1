@@ -6,7 +6,7 @@ const PORT = 3000;
 
 app.set('view engine', 'ejs');
 app.use(express.static('public'));
-app.use(express.text()); // ¡Importante! Permite leer el body como texto plano
+app.use(express.text()); 
 app.use(analyzeRouter);
 
 app.listen(PORT, () => {
