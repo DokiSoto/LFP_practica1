@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokemon USAC</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="/css/index.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/dracula.min.css">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        header {
+            background-color: #5b0cc9;
+            color: white;
+            padding: 1rem;
+            text-align: center;
+        }
+        nav {
+            background-color: #1d3557;
+            color: white;
+            padding: 0.5rem;
+            display: flex;
+            justify-content: space-around;
+        }
+        nav a {
+            color: white;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+        }
+        nav a:hover {
+            background-color: #457b9d;
+        }
+        .container {
+            display: flex;
+            margin: 1rem;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .editor-section {
+            flex: 2;
+            min-width: 300px;
+            background-color: white;
+            padding: 1rem;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .results-section {
+            flex: 3;
+            min-width: 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .tokens-container, .errors-container, .team-container {
+            background-color: white;
+            padding: 1rem;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            overflow-x: auto;
+        }
+        .CodeMirror {
+            height: 300px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+        button {
+            background-color: #457b9d;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            margin: 0.5rem 0;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #1d3557;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #1d3557;
+            color: white;
+            position: sticky;
+            top: 0;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        .file-options {
+            margin: 1rem 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        .error-row {
+            color: #e63946;
+            font-weight: bold;
+        }
+        .hidden {
+            display: none;
+        }
+        #error-report-container {
+            margin-top: 1rem;
+        }
+        /* Estilos para el equipo Pokémon */
+        .team-container {
+            margin-top: 2rem;
+        }
+        .team-header {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        .pokemon-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 1rem;
+        }
+        .pokemon-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+            transition: transform 0.3s;
+        }
+        .pokemon-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .pokemon-sprite {
+            width: 120px;
+            height: 120px;
+            object-fit: contain;
+        }
+        .pokemon-name {
+            font-weight: bold;
+            margin: 0.5rem 0;
+        }
+        .pokemon-type {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        .pokemon-stats {
+            margin-top: 0.5rem;
+            font-size: 0.8rem;
+        }
+        .pokemon-iv {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Pokemon USAC</h1>
+        <p>Analizador Léxico para Equipos Pokeemon</p>
+    </header>
+
+    <nav>
+        <a href="/"></i> Home</a>
+        <a href="#" id="error-report-link"></i> Errores</a>
+        <a href="#" id="manual-tecnico-link"></i> Manual Técnico</a>
+        <a href="#" id="manual-usuario-link"></i> Manual de Usuario</a>
+    </nav>
+
+    <div class="container">
+        <div class="editor-section">
+            <h2>Editor de Texto</h2>
+            <textarea id="code-editor">
+       </textarea>
+            
+            <div class="file-options">
+                <button id="clear-editor"></i> Limpiar Editor</button>
+                <button id="load-file"></i> Cargar Archivo</button>
+                <input type="file" id="file-input" accept=".pklfp" style="display: none;">
+            </div>
+
+            <button id="analyze-button"></i> Analizar</button>
+        </div>
+
+        <div class="results-section">
+            <div class="tokens-container">
+                <h2>Tabla de Tokens</h2>
+                <table id="tokens-table">
+                    <thead>
+                        <tr>
+                            <th>No.</th>
+                            <th>Fila</th>
+                            <th>Columna</th>
+                            <th>Lexema</th>
+                            <th>Token</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="errors-container hidden" id="error-report-container">
+                <h2>Reporte de Errores</h2>
+                <table id="errors-table">
+                    <thead>
+                        <tr>
+                            <th>Numero.</th>
+                            <th>Fila</th>
+                            <th>Columna</th>
+                            <th>Carácter</th>
+                            <th>Descripcion</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="team-container hidden" id="team-container">
+                <h2 class="team-header" id="team-title">Equipo Pokemon</h2>
+                <div class="pokemon-grid" id="pokemon-grid">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/clike/clike.min.js"></script>
+    <script>
+        const editor = CodeMirror.fromTextArea(document.getElementById('code-editor'), {
+            lineNumbers: true,
+            mode: 'text/x-csrc',
+            theme: 'dracula',
+            indentUnit: 4,
+            tabSize: 4,
+            lineWrapping: true
+        });
+
+        async function getPokemon(name) {
+            try {
+                const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${name.toLowerCase()}`);
+                if (!response.ok) throw new Error('Pokemon no encontrado');
+                const data = await response.json();
+                return {
+                    sprite: data.sprites.other['official-artwork'].front_default || data.sprites.front_default,
+                    types: data.types.map(t => t.type.name)
+                };
+            } catch (error) {
+                console.error(`Error al obtener ${name}:`, error);
+                return {
+                    sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/0.png',
+                    types: ['unknown']
+                };
+            }
+        }
+
+        function calculateIVs(health, attack, defense) {
+            const maxPossible = 15 * 3; 
+            const total = health + attack + defense;
+            return (total / maxPossible) * 100;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const clearButton = document.getElementById('clear-editor');
+            const loadButton = document.getElementById('load-file');
+            const fileInput = document.getElementById('file-input');
+            const analyzeButton = document.getElementById('analyze-button');
+            const tokensTable = document.getElementById('tokens-table').getElementsByTagName('tbody')[0];
+            const errorsTable = document.getElementById('errors-table').getElementsByTagName('tbody')[0];
+            const errorReportLink = document.getElementById('error-report-link');
+            const errorReportContainer = document.getElementById('error-report-container');
+            const teamContainer = document.getElementById('team-container');
+            const pokemonGrid = document.getElementById('pokemon-grid');
+            const teamTitle = document.getElementById('team-title');
+
+            clearButton.addEventListener('click', () => {
+                editor.setValue('');
+            });
+
+            loadButton.addEventListener('click', () => {
+                fileInput.click();
+            });
+
+            fileInput.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        editor.setValue(e.target.result);
+                    };
+                    reader.readAsText(file);
+                }
+            });
+
+            errorReportLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                errorReportContainer.classList.toggle('hidden');
+            });
+
+            analyzeButton.addEventListener('click', async () => {
+                const content = editor.getValue().trim();
+                if (!content) {
+                    alert('El editor esta vacio maje XD');
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/analyze', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'text/plain',
+                        },
+                        body: content
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Error ${response.status}: ${response.statusText}`);
+                    }
+
+                    const data = await response.json();
+
+                    tokensTable.innerHTML = '';
+                    errorsTable.innerHTML = '';
+                    pokemonGrid.innerHTML = '';
+
+                    if (data.tokens && data.tokens.length > 0) {
+                        data.tokens.forEach((token, index) => {
+                            const row = tokensTable.insertRow();
+                            row.insertCell(0).textContent = index + 1;
+                            row.insertCell(1).textContent = token.row;
+                            row.insertCell(2).textContent = token.column;
+                            row.insertCell(3).textContent = token.lexeme;
+                            row.insertCell(4).textContent = token.typeTokenString || token.typeToken;
+                        });
+                    } else {
+                        const row = tokensTable.insertRow();
+                        row.insertCell(0).textContent = 'No se encontraron tokens';
+                        row.cells[0].colSpan = 5;
+                    }
+
+                    if (data.errors && data.errors.length > 0) {
+                        errorReportContainer.classList.remove('hidden');
+                        data.errors.forEach((error, index) => {
+                            const row = errorsTable.insertRow();
+                            row.className = 'error-row';
+                            row.insertCell(0).textContent = index + 1;
+                            row.insertCell(1).textContent = error.row;
+                            row.insertCell(2).textContent = error.column;
+                            row.insertCell(3).textContent = error.lexeme || ' ';
+                            row.insertCell(4).textContent = error.typeTokenString || 'Desconocido';
+                        });
+                    } else {
+                        errorReportContainer.classList.add('hidden');
+                    }
+
+                    if (data.team && data.errors.length === 0) {
+                        teamContainer.classList.remove('hidden');
+                        teamTitle.textContent = `Entrenador: ${data.team.player}`;
+
+                        for (const pokemon of data.team.pokemons) {
+                            const pokemonData = await getPokemon(pokemon.name);
+                            
+                            const card = document.createElement('div');
+                            card.className = 'pokemon-card';
+                            
+                            card.innerHTML = `
+                                <img class="pokemon-sprite" src="${pokemonData.sprite}" alt="${pokemon.name}" 
+                                     onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/0.png'">
+                                <div class="pokemon-name">${pokemon.name}</div>
+                                <div class="pokemon-type">${pokemon.type}</div>
+                                <div class="pokemon-stats">
+                                    <div>Salud: ${pokemon.health}</div>
+                                    <div>Ataque: ${pokemon.attack}</div>
+                                    <div>Defensa: ${pokemon.defense}</div>
+                                    <div class="pokemon-iv">IVs: ${pokemon.ivs.toFixed(1)}%</div>
+                                </div>
+                            `;
+                            
+                            pokemonGrid.appendChild(card);
+                        }
+                    } else {
+                        teamContainer.classList.add('hidden');
+                    }
+
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert(`Error: ${error.message}`);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
